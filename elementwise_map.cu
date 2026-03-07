@@ -16,6 +16,35 @@ Problem
 __global__ void function(float* X, float* Y, int vectorLength) {
     int workIndex = threadIdx.x + blockIdx.x * blockDim.x;
     if (workIndex < vectorLength) {
-        Y[workIndex] = X[workIndex] * X[workIndex]
+        Y[workIndex] = X[workIndex] * X[workIndex];
     }
+}
+
+void memory(float* X, float* Y, int vectorLength) {
+    cudaMallocManaged(&X, vectorLength * sizeof(float));
+    cudaMallocManaged(&Y, vectorLength * sizeof(float));
+    
+    int thread = 256;
+    int blocks = cuda::ceil_div(vectorLength, threads);
+    function<<<blocks, threads>>>(X, Y, vectorLength);
+
+    cudaDeviceSynchronize();
+
+    cudaFree(X);
+    cudaFree(Y);
+}
+
+int main() {
+    int vectorLength = 0;
+    float* X = nullptr;
+    float* Y = nullptr;
+
+    while (std::cin != getline()) {
+        std::cin >> X[vectorLength];
+        vectorLength++;
+    }
+
+    memory(X, Y, vectorLength);
+
+    return 0;
 }
