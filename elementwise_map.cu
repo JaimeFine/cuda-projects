@@ -25,6 +25,7 @@ __global__ void function(float* X, float* Y, int vectorLength) {
 __global__ void function_upgrade(float* X, float* Y, int N) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
+    // blockDim.x * gridDim.x = total_threads
 
     for (int i = idx; i < N; i += stride) {
         Y[i] = X[i] * X[i];
