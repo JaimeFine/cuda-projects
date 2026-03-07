@@ -12,7 +12,6 @@ Problem
 #include <cstdlib>
 #include <memory.h>
 #include <stdio.h>
-#include <cuda/cmath>
 #include <iostream>
 
 __global__ void function(float* X, float* Y, int vectorLength) {
@@ -24,25 +23,31 @@ __global__ void function(float* X, float* Y, int vectorLength) {
 
 void calculate(float* X, float* Y, int vectorLength) {    
     int threads = 256;
-    int blocks = cuda::ceil_div(vectorLength, threads);
+    int blocks = (vectorLength + threads - 1) / threads;
     function<<<blocks, threads>>>(X, Y, vectorLength);
 
     cudaDeviceSynchronize();
 }
 
 int main() {
-    int vectorLength = 1000;
+    int vectorLength = 5;
     float* X = nullptr;
     float* Y = nullptr;
 
     cudaMallocManaged(&X, vectorLength * sizeof(float));
     cudaMallocManaged(&Y, vectorLength * sizeof(float));
 
+    std::cout << "Please enter " << vectorLength << " numbers:\n";
     for (int i = 0; i < vectorLength; i++) {
         std::cin >> X[i];
     }
 
     calculate(X, Y, vectorLength);
+
+    for (int i = 0; i < vectorLength; i++) {
+        std::cout << Y[i] << " ";
+    }
+    std::cout << std::endl;
 
     cudaFree(X);
     cudaFree(Y);
