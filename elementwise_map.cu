@@ -12,6 +12,8 @@ Problem
 #include <cstdlib>
 #include <memory.h>
 #include <stdio.h>
+#include <cuda/cmath>
+#include <iostream>
 
 __global__ void function(float* X, float* Y, int vectorLength) {
     int workIndex = threadIdx.x + blockIdx.x * blockDim.x;
@@ -20,31 +22,30 @@ __global__ void function(float* X, float* Y, int vectorLength) {
     }
 }
 
-void memory(float* X, float* Y, int vectorLength) {
-    cudaMallocManaged(&X, vectorLength * sizeof(float));
-    cudaMallocManaged(&Y, vectorLength * sizeof(float));
-    
-    int thread = 256;
+void calculate(float* X, float* Y, int vectorLength) {    
+    int threads = 256;
     int blocks = cuda::ceil_div(vectorLength, threads);
     function<<<blocks, threads>>>(X, Y, vectorLength);
 
     cudaDeviceSynchronize();
-
-    cudaFree(X);
-    cudaFree(Y);
 }
 
 int main() {
-    int vectorLength = 0;
+    int vectorLength = 1000;
     float* X = nullptr;
     float* Y = nullptr;
 
-    while (std::cin != getline()) {
-        std::cin >> X[vectorLength];
-        vectorLength++;
+    cudaMallocManaged(&X, vectorLength * sizeof(float));
+    cudaMallocManaged(&Y, vectorLength * sizeof(float));
+
+    for (int i = 0; i < vectorLength; i++) {
+        std::cin >> X[i];
     }
 
-    memory(X, Y, vectorLength);
+    calculate(X, Y, vectorLength);
+
+    cudaFree(X);
+    cudaFree(Y);
 
     return 0;
 }
