@@ -45,21 +45,27 @@ __global__ void calculate(float* X, float* result, int N) {
 int main() {
     // Initiate the data
     float* X = nullptr;
-    auto N = 100;
     float* result = nullptr;
+    auto N = 100;
+
+    int threads = 256;
+    int blocks = (N + threads - 1) / threads;
 
     cudaMallocManaged(&X, N * sizeof(float));
-    cudaMallocManaged(&result, sizeof(float));
+    cudaMallocManaged(&result, blocks * sizeof(float));
 
     for (int i = 0; i < N; i++) {
         X[i] = i;
     }
 
-    int threads = 256;
-    calculate<<<1, threads>>>(X, result, N);
+    calculate<<<blocks, threads>>>(X, result, N);
     cudaDeviceSynchronize();
 
-    std::cout << *result << std::endl;
+    float final_sum = 0;
+    for (int i = 0; i < blocks; i++) {
+        final_sum += result[i];
+    }
+    std::cout << final_sum << std::endl;
     
     cudaFree(result);
     cudaFree(X);
