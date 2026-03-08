@@ -3,9 +3,13 @@ Elementwise Map
 
 Problem
     Implement a CUDA kernel that applies a function elementwise to an input array.
+    
     Given an array x of size N, compute:
+    
         y_i = x_i * x_i
+    
     for every element in parallel on the GPU.
+
     Each thread should process one element.
 */
 #include <cuda_runtime_api.h>
