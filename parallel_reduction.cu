@@ -21,7 +21,7 @@ Problem
 #include <cuda_runtime_api.h>
 
 __global__ void calculate(float* X, float* result, int N) {
-    __shared__ float sharedData[256];
+    extern __shared__ float sharedData[];
     
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + tid;
@@ -58,7 +58,7 @@ int main() {
         X[i] = i;
     }
 
-    calculate<<<blocks, threads>>>(X, result, N);
+    calculate<<<blocks, threads, threads * sizeof(float)>>>(X, result, N);
     cudaDeviceSynchronize();
 
     float final_sum = 0;
