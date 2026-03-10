@@ -30,7 +30,7 @@ int main() {
     const int B = 4;
 
     int host_X[N] = {1, 3, 2, 1, 0, 2, 3, 1};
-    int* host_result[B] = {0};
+    int host_result[B] = {0};
 
     int *device_X, *device_result;
 
