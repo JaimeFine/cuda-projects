@@ -15,23 +15,48 @@ Problem
     increment the correcponding histogram bin.
 */
 #include <iostream>
-#include <vector>
 #include <cuda_runtime_api.h>
 
-__global__ void histogram(float* X, float* result) {
+__global__ void histogram(int* X, int* result, int N) {
     int workIndex = threadIdx.x + blockIdx.x * blockDim.x;
-    X[workIndex] = val;
-    atomicAdd(result[val], 1);
+    if (workIndex < N) {
+        int val = X[workIndex];
+        atomicAdd(&result[val], 1);
+    }
 }
 
 int main() {
-    float* X;
-    float* result;
+    const int N = 8;
+    const int B = 4;
 
-    X = [1, 3, 2, 1, 0, 2, 3, 1];
-    result = [];
+    int host_X[N] = {1, 3, 2, 1, 0, 2, 3, 1};
+    int* host_result[B] = {0};
+
+    int *device_X, *device_result;
+
+    cudaMallocManaged(&device_X, N * sizeof(int));
+    cudaMallocManaged(&device_result, B * sizeof(int));
+
+    cudaMemcpy(device_X, host_X, N * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_result, host_result, B * sizeof(int), cudaMemcpyHostToDevice);
+
+    int threads = 256;
+    int blocks = (N + threads - 1) / threads;
+
+    histogram<<<blocks, threads>>>(device_X, device_result, N);
+
+    cudaDeviceSynchronize();
+
+    cudaMemcpy(host_result, device_result, B * sizeof(int), cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < B; i++) {
-        std::cout << result[i] << " ";
+        std::cout << host_result[i] << " ";
     }
+
+    std::cout << std::endl;
+
+    cudaFree(device_X);
+    cudaFree(device_result);
+
+    return 0;
 }
