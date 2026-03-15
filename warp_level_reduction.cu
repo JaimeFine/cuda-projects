@@ -63,7 +63,7 @@ int main() {
 
     int threads = 256;
     int blocks = (N + threads - 1) / threads;
-    warp_reduce_kernel<<<threads, blocks>>>(X, out, N);
+    warp_reduce_kernel<<<blocks, threads>>>(X, out, N);
     cudaDeviceSynchronize();
 
     int numWarps = (N + 31) / 32;
