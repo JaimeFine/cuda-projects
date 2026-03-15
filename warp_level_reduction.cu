@@ -15,6 +15,9 @@ Problem
     The reduction should be performed entirely within the warp,
     without using shared memory or block-level synchronization.
 */
+#include <cuda_runtime_api.h>
+#include <iostream>
+
 __inline__ __device__ float warp_reduce_sum(float val) {
     unsigned mask = 0xffffffff;
 
@@ -46,7 +49,7 @@ __global__ void warp_reduce_kernel(float* X, float* out, int N) {
 
 int main() {
     float *X, *out;
-    int N = 10;
+    int N = 100;
 
     X = nullptr;
     out = nullptr;
@@ -55,10 +58,21 @@ int main() {
     cudaMallocManaged(&out, N * sizeof(float));
 
     for (int i = 0; i < N; i++) {
-        X[i] = i;
+        X[i] = float(i);
     }
 
     int threads = 256;
     int blocks = (N + threads - 1) / threads;
     warp_reduce_kernel<<<threads, blocks>>>(X, out, N);
+    cudaDeviceSynchronize();
+
+    int numWarps = (N + 31) / 32;
+    for (int i = 0; i < numWarps; i++) {
+        std::cout << "Warp " << i << " sum: " << out[i] << std::endl;
+    }
+
+    cudaFree(X);
+    cudaFree(out);
+    
+    return 0;
 }
