@@ -69,5 +69,6 @@ int main() {
     
     cudaFree(result);
     cudaFree(X);
+    
     return 0;
 }
