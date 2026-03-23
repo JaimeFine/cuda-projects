@@ -27,6 +27,8 @@ Problem
 #include <cuda_runtime_api.h>
 #include <iostream>
 
+#define TILE 16
+
 /*
 __global__ void transpose(float* A, float* B, int M, int N) {
     extern __shared__ float sharedA[];
@@ -90,8 +92,11 @@ int main() {
     transpose<<<blocks, threads>>>(A, B, M, N);
     cudaDeviceSynchronize();
 
-    for (int i = 0; i < M * N; i++) {
-        std::cout << B[i] << " ";
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            std::cout << B[i * M + j] << " ";
+        }
+        std::cout << "\n";
     }
 
     cudaFree(A);
