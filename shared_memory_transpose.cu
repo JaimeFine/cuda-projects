@@ -27,12 +27,13 @@ Problem
 #include <cuda_runtime_api.h>
 #include <iostream>
 
+/*
 __global__ void transpose(float* A, float* B, int M, int N) {
     extern __shared__ float sharedA[];
     extern __shared__ float sharedB[];
 
     int tid = threadIdx.x;
-    int i = blockIdx.x * blockDim.x + tid
+    int i = blockIdx.x * blockDim.x + tid;
 
     sharedA[tid] = (i < M * N) ? A[i] : 0.0f;
     sharedB[tid] = (i < M * N) ? B[i] : 0.0f;
@@ -47,6 +48,27 @@ __global__ void transpose(float* A, float* B, int M, int N) {
     }
 
 }
+*/
+
+__global__ void transpose(float* A, float* B, int M, int N) {
+    __shared__ float tile[TILE][TILE + 1];
+
+    int x = blockIdx.x * TILE + threadIdx.x;
+    int y = blockIdx.y * TILE + threadIdx.y;
+
+    if (x < N && y < M) {
+        tile[threadIdx.y][threadIdx.x] = A[y * N + x];
+    }
+
+    __syncthreads();
+
+    int tx = blockIdx.y * TILE + threadIdx.x;
+    int ty = blockIdx.x * TILE + threadIdx.y;
+
+    if (tx < M && ty < N) {
+        B[ty * M + tx] = tile[threadIdx.x][threadIdx.y];
+    }
+}
 
 int main() {
     float* A = nullptr;
@@ -55,9 +77,6 @@ int main() {
     int M = 50;
     int N = 25;
 
-    int threads = 256;
-    int blocks = (N + threads - 1) / threads;
-
     cudaMallocManaged(&A, M * N * sizeof(float));
     cudaMallocManaged(&B, M * N * sizeof(float));
 
@@ -65,9 +84,10 @@ int main() {
         A[i] = i;
     }
 
-    transpose<<<blocks, threads, threads * sizeof(float)>>>(
-        A, B, M, N
-    );
+    dim3 threads(TILE, TILE);
+    dim3 blocks((N + TILE - 1) / TILE, (M + TILE - 1) / TILE);
+
+    transpose<<<blocks, threads>>>(A, B, M, N);
     cudaDeviceSynchronize();
 
     for (int i = 0; i < M * N; i++) {
