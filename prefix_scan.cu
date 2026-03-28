@@ -25,8 +25,8 @@ __global__ void scan(float* X, float* Y, int N) {
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + tid;
 
-    if (tid < N)
-        shared[tid] = X[tid];
+    if (i < N)
+        shared[tid] = X[i];
     else
         shared[tid] = 0;
     __syncthreads();
@@ -55,7 +55,7 @@ __global__ void scan(float* X, float* Y, int N) {
     }
 
     if (i < N)
-        Y[i] = s[tid];
+        Y[i] = shared[tid];
 }
 
 int main() {
@@ -64,19 +64,19 @@ int main() {
     float* Y = nullptr;
 
     cudaMallocManaged(&X, N * sizeof(float));
-    cudaMallocManaged(&Y, (N + 1) * sizeof(float));
+    cudaMallocManaged(&Y, N * sizeof(float));
 
     for (int i = 0; i < N; i++) {
         X[i] = i;
     }
 
     int threads = 256;
-    int blocks = (threads + N - 1) / threads;
-    scan<<<blocks, threads>>>(X, Y, N);
+    int blocks = (N + threads - 1) / threads;
+    scan<<<blocks, threads, threads * sizeof(float)>>>(X, Y, N);
 
     cudaDeviceSynchronize();
 
-    for (int i = 0; i < N + 1; i++) {
+    for (int i = 0; i < N; i++) {
         std::cout << Y[i] << " ";
     }
     
