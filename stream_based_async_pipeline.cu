@@ -39,16 +39,19 @@ int main() {
     float* Y = nullptr;
     int N = 50;
 
-    int chunck = 10;
+    int chunk = 10;
     int num = N / chunk;
+
+    cudaMallocHost(&X, N * sizeof(float));
+    cudaMallocHost(&Y, N * sizeof(float));
+
+    for (int i = 0; i < N; i++)
+        X[i] = i;
 
     cudaStream_t streams[num];
 
     for (int i = 0; i < num; i++)
-        cudaStreamCreate(&streams[i])
-
-    cudaMallocHost(&X, N * sizeof(float));
-    cudaMallocHost(&Y, N * sizeof(float));
+        cudaStreamCreate(&streams[i]);
 
     float* d_X[num];
     float* d_Y[num];
@@ -58,16 +61,44 @@ int main() {
         cudaMalloc(&d_Y[i], chunk * sizeof(float));
     }
 
-    for (int i = 0; i < chunks; i++) {
-        cudaMemcpyAsync(d_X[s], somehting something);
+    int threads = 128;
+    int blocks = (chunk + threads - 1) / threads;
+
+    for (int i = 0; i < num; i++) {
+        int s = i;
+        // AI suggestion: int s = i % number of streams
+
+        cudaMemcpyAsync(
+            d_X[s], X + i * chunk,
+            chunk * sizeof(float),
+            cudaMemcpyHostToDevice,
+            streams[s]
+        );
 
         kernel<<<blocks, threads, 0, streams[s]>>>(d_X[s], d_Y[s], chunk);
 
-        cudaMemcpyAsync(something, something);
+        cudaMemcpyAsync(
+            Y + i * chunk, d_Y[s],
+            chunk * sizeof(float),
+            cudaMemcpyDeviceToHost,
+            streams[s]
+        );
     }
 
     cudaDeviceSynchronize();
 
-    Free(this);
-    Free(that);
+    for (int i = 0; i < N; i++) {
+        std::cout << Y[i] << " ";
+    }
+
+    for (int i = 0; i < num; i++) {
+        cudaFree(d_x[i]);
+        cudaFree(d_Y[i]);
+        cudaStreamDestroy(streams[i]);
+    }
+
+    cudaFreeHost(X);
+    cudaFreeHost(Y);
+
+    return 0;
 }
